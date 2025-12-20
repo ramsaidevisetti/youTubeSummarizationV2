@@ -1,0 +1,9 @@
+fastapi>=0.68.0
+uvicorn>=0.15.0
+pydantic>=1.8.0
+youtube-transcript-api>=0.6.0
+python-dotenv>=0.19.0
+requests>=2.26.0
+openai-whisper>=20231117
+yt-dlp>=2023.3.4
+python-multipart>=0.0.5
