@@ -5,13 +5,12 @@ from dotenv import load_dotenv
 # LOAD ENV HERE
 load_dotenv()
 
-GEMINI_API_KEY = "AIzaSyCmGsIBYBZp8ThMMu4a6bMd9tsLRdRV-Vo"
+GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
 
-# Validate API key is set
 if not GEMINI_API_KEY:
     raise ValueError(
-        "GEMINI_API_KEY environment variable is not set. "
-        "Please create a .env file in the ai_services directory with: GEMINI_API_KEY=your_api_key_here"
+        "GEMINI_API_KEY is not set. "
+        "Add it to a .env file as: GEMINI_API_KEY=your_api_key_here"
     )
 
 GEMINI_URL = (

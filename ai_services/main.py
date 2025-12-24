@@ -24,6 +24,62 @@ app = FastAPI(
 )
 
 
+class TranscriptRequest(BaseModel):
+    url: Optional[str] = Field(
+        None,
+        description="YouTube URL (https://www.youtube.com/watch?v=... or https://youtu.be/...)"
+    )
+    video_id: Optional[str] = Field(
+        None,
+        description="YouTube video ID (11 characters)"
+    )
+    language: str = "en"
+
+    @model_validator(mode="after")
+    def validate_input(self):
+        if not self.url and not self.video_id:
+            raise ValueError("Either 'url' or 'video_id' must be provided")
+        return self
+
+class TranscriptResponse(BaseModel):
+    video_id: str
+    language: str
+    transcript: list
+    message: str = "Transcript retrieved successfully"
+
+@app.post("/transcript", response_model=TranscriptResponse)
+async def get_transcript(request: TranscriptRequest):
+    """
+    Fetch and return the transcript for a YouTube video.
+    """
+    try:
+        # 1️⃣ Resolve video_id
+        video_id = request.video_id or extract_video_id(request.url)
+        if not video_id:
+            raise HTTPException(status_code=400, detail="Invalid YouTube URL or video ID")
+
+        # 2️⃣ Fetch transcript
+        transcript_data = fetch_youtube_transcript(video_id, language=request.language)
+        if not transcript_data:
+            raise HTTPException(
+                status_code=404,
+                detail=f"No transcript found for video '{video_id}' in language '{request.language}'"
+            )
+
+        return TranscriptResponse(
+            video_id=video_id,
+            language=request.language,
+            transcript=transcript_data
+        )
+
+    except HTTPException:
+        raise
+    except ValueError as ve:
+        raise HTTPException(status_code=400, detail=str(ve))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error fetching transcript: {str(e)}")
+
+
 # -------------------------
 # Request & Response Models
 # -------------------------
@@ -129,6 +185,7 @@ def health():
     return {"status": "healthy"}
 
 
+
 @app.post("/summarize", response_model=SummaryResponse)
 def summarize_video(request: SummarizeRequest):
     try:
@@ -161,17 +218,50 @@ def summarize_video(request: SummarizeRequest):
         )
 
         # 5️⃣ Generate summary
-        summary_list = generate_summary(retrieved_chunks)
-        summary_text = "\n".join(summary_list) if summary_list else "No summary generated"
-
-        return SummaryResponse(
-            video_id=video_id,
-            language=request.language,
-            summary=summary_text,
-            transcript_lines=len(transcript_data),
-            total_chunks=len(chunks),
-            retrieved_chunks_used=len(retrieved_chunks),
-        )
+        try:
+            summary_result = generate_summary(retrieved_chunks)
+            
+            # Debugging: Print the summary result
+            print("Summary result:", summary_result)
+            
+            # Ensure we have valid summary content
+            if not summary_result or not isinstance(summary_result, dict):
+                raise ValueError("Invalid summary format generated")
+                
+            paragraph = summary_result.get("paragraph", "No summary available")
+            bullets = summary_result.get("bullets", [])
+            
+            if not isinstance(bullets, list):
+                bullets = [str(bullets)] if bullets else ["No key points available"]
+            
+            # Join bullets with newlines
+            bullet_text = "\n".join([f"• {bullet}" for bullet in bullets])
+            
+            # Combine paragraph and bullets
+            full_summary = f"{paragraph}\n\nKey Points:\n{bullet_text}"
+            
+            return SummaryResponse(
+                video_id=video_id,
+                language=request.language,
+                summary=full_summary,
+                transcript_lines=len(transcript_data),
+                total_chunks=len(chunks),
+                retrieved_chunks_used=len(retrieved_chunks),
+            )
+            
+        except Exception as e:
+            # If summary generation fails, return a basic response with the error
+            error_msg = f"Error generating summary: {str(e)}"
+            print(error_msg)
+            return SummaryResponse(
+                video_id=video_id,
+                language=request.language,
+                summary="Error: Could not generate summary. Please try again later.",
+                transcript_lines=len(transcript_data),
+                total_chunks=len(chunks),
+                retrieved_chunks_used=0,
+                message=error_msg
+            )
 
     except HTTPException:
         raise
@@ -179,6 +269,15 @@ def summarize_video(request: SummarizeRequest):
         raise HTTPException(status_code=400, detail=str(ve))
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Internal server error: {str(e)}")
+
+class SummaryResponse(BaseModel):
+    video_id: str
+    language: str
+    summary: str  # This will now contain both paragraph and bullets
+    transcript_lines: int
+    total_chunks: int
+    retrieved_chunks_used: int
+    message: str = "Summary generated successfully"
 
 class QuestionRequest(BaseModel):
     url: Optional[str] = None
