@@ -24,6 +24,11 @@ app.get('/api/health', (req, res) => {
     res.json({ status: 'ok' });
 });
 
+// Root health check for Railway
+app.get('/', (req, res) => {
+    res.json({ status: 'ok', message: 'Backend is running' });
+});
+
 // Store Video URL Endpoint
 app.post('/api/video/store', async (req, res) => {
     console.log('=== Store Video URL Request ===');
