@@ -4,3 +4,4 @@ numpy
 python-dotenv
 youtube-transcript-api
 requests
+whisper
