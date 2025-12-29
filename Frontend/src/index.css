@@ -277,14 +277,15 @@ input, button, select, textarea, .toggle, .primary-btn, .video-input input, .inp
 .chat-box::-webkit-scrollbar{ width:8px }
 .chat-box::-webkit-scrollbar-thumb{ background: rgba(255,255,255,0.06); border-radius:8px }
 
+
 /* Player and controls */
-.player { min-height: 260px; display:flex; align-items:center; justify-content:center; padding:12px; flex: 0 0 44%; }
-.player-wrap{ width:100%; height:0; padding-bottom:56.25%; position:relative }
-.player-wrap iframe{ position:absolute; inset:0; width:100%; height:100%; border-radius:8px }
+.player { max-height:520px; display:flex; align-items:center; justify-content:center; padding:12px; flex: 0 0 40%; }
+.player-wrap{ width:100%; height:80%; padding-bottom:56.25%; position:relative }
+.player-wrap iframe{ position:absolute; inset:0; width:100%; height:100%; border-radius:8px; margin:1px; justify-self:center; }
 .player-placeholder{ color:#9fb2d9; padding:24px; text-align:center }
 
 /* increase player prominence for readability */
-.player { min-height: 320px; }
+.player { max-height:420px; }
 .player-placeholder{ font-size:16px }
 
 .controls { display:flex; flex-direction:column; align-items:stretch; gap:12px; padding:10px; }
